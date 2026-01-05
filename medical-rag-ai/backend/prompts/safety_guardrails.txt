@@ -1,0 +1,10 @@
+Review the following explanation for safety and compliance.
+Ensure:
+1. No definitive diagnosis is made (e.g., "You have diabetes"). Change to "High glucose levels can be consistent with diabetes...".
+2. No specific medication is prescribed.
+3. A partial disclaimer is present at the end. [The system adds a full disclaimer, but ensure the tone is non-diagnostic].
+
+Explanation:
+{explanation}
+
+Refined Explanation:

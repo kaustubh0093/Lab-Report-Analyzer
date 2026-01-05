@@ -1,0 +1,13 @@
+Extract all lab test entities from the following medical text. 
+Return the output as a JSON list of objects.
+Each object must have:
+- "test_name": The specific name of the test (e.g., Hemoglobin, Glucose).
+- "value": The numerical or qualitative result.
+- "unit": The unit of measurement (extract exactly as shown).
+- "reference_range": The range provided in the text (if available).
+- "flag": Any indicator like "High", "Low", "Abnormal" (if available).
+
+Text:
+{text}
+
+IMPORTANT: If the text does not contain any medical lab test results, or appears to be code/documentation/irrelevant, return exactly an empty JSON list: []. Do not return any other text or explanation.
