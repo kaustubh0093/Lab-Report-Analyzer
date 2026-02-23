@@ -27,18 +27,26 @@ class ClinicalChain:
 
     def extract_entities(self, text: str):
         """
-        Uses LLM to extract LabEntity objects from text.
+        Uses LLM to extract LabEntity objects and diagnosis from text.
+        Returns a dict with 'entities' and 'diagnosis' keys.
         """
         chain = self.entity_prompt | self.llm | JsonOutputParser()
         try:
             result = chain.invoke({"text": text})
-            # Ensure it's a list
-            if isinstance(result, dict):
-                result = [result]
-            return result
+            # Ensure proper structure
+            if isinstance(result, dict) and "entities" in result and "diagnosis" in result:
+                return result
+            # Fallback for old format (list of entities)
+            elif isinstance(result, list):
+                return {"entities": result, "diagnosis": []}
+            # Single entity dict
+            elif isinstance(result, dict):
+                return {"entities": [result], "diagnosis": []}
+            else:
+                return {"entities": [], "diagnosis": []}
         except Exception as e:
             print(f"Entity Extraction Warning: {e}")
-            return []
+            return {"entities": [], "diagnosis": []}
 
     def generate_explanation(self, entities):
         """
@@ -64,7 +72,8 @@ class ClinicalChain:
         Context from Patient's Lab Report:
         {context}
         
-        Answer the user's question based on this report. Be helpful, empathetic, but clear that you are an AI."""
+        Answer the user's question based on this report. Be helpful, empathetic, but clear that you are an AI. 
+        IMPORTANT: DO NOT use introductory phrases like "Hello", "I'm an AI assistant", or "As a medical assistant" if the conversation has already started. Just answer the question directly and naturally."""
         
         messages = [("system", system_msg)]
         for msg in chat_history:
@@ -78,13 +87,16 @@ class ClinicalChain:
 
     def run_analysis(self, text: str):
         # 1. Extraction
-        entities = self.extract_entities(text)
+        extraction_result = self.extract_entities(text)
+        entities = extraction_result.get("entities", [])
+        diagnosis = extraction_result.get("diagnosis", [])
         
-        if not entities:
+        if not entities and not diagnosis:
             return {
                 "entities": [],
+                "diagnosis": [],
                 "summary": "No measurable data found.",
-                "explanation": "The AI could not identify standard lab tests in this document.",
+                "explanation": "The AI could not identify standard lab tests or diagnosis in this document.",
                 "medication_suggestions": [],
                 "follow_up_suggestions": [],
                 "disclaimer": ""
@@ -93,9 +105,18 @@ class ClinicalChain:
         # 2. Explanation & Medications
         explanation_data = self.generate_explanation(entities)
         
+        # Create summary
+        summary_parts = []
+        if entities:
+            summary_parts.append(f"{len(entities)} lab test(s)")
+        if diagnosis:
+            summary_parts.append(f"{len(diagnosis)} diagnosis/condition(s)")
+        summary = f"Analyzed {', '.join(summary_parts)}." if summary_parts else "Analysis complete."
+        
         return {
             "entities": entities,
-            "summary": f"Analyzed {len(entities)} tests.",
+            "diagnosis": diagnosis,
+            "summary": summary,
             "explanation": explanation_data.get("explanation", ""),
             "medication_suggestions": explanation_data.get("medication_suggestions", []),
             "follow_up_suggestions": explanation_data.get("follow_up_suggestions", ["Consult a doctor."]),

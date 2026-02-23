@@ -158,14 +158,21 @@ def main():
                                     # Store in Session State
                                     st.session_state.analysis_results = results
                                     # Construct context for chat specific to this report
-                                    st.session_state.report_context = f"Summary: {results['summary']}\nExplanation: {results['explanation']}\nFindings: " + ", ".join([f"{e['test_name']}: {e['value']}" for e in results['entities']])
+                                    context_parts = [f"Summary: {results['summary']}", f"Explanation: {results['explanation']}"]
+                                    if results.get('diagnosis'):
+                                        context_parts.append(f"Diagnosis: {', '.join(results['diagnosis'])}")
+                                    if results.get('entities'):
+                                        context_parts.append(f"Findings: " + ", ".join([f"{e['test_name']}: {e['value']}" for e in results['entities']]))
+                                    st.session_state.report_context = "\n".join(context_parts)
                                     st.success("Analysis Complete!")
                                 else:
                                     st.error(f"Analysis Failed: {analysis_res.text}")
                         else:
                             st.error(f"Upload Failed: {response.text}")
+                    except requests.exceptions.ConnectionError:
+                        st.error("🚨 **Backend Connection Error**: Could not connect to the API. Is the FastAPI server running on port 8000?")
                     except Exception as e:
-                        st.error(f"Connection Error: {e}. Is the backend running?")
+                        st.error(f"❌ **Unexpected Error**: {e}")
     
     # Display Results if available
     if st.session_state.analysis_results:
@@ -179,7 +186,34 @@ def display_results(data):
     # Summary
     st.markdown(f"**Summary**: {data['summary']}")
     
+    # Diagnosis Section - Display prominently if available
+    if data.get('diagnosis') and len(data['diagnosis']) > 0:
+        st.markdown("---")
+        st.subheader("🩺 Diagnosis / Conditions")
+        st.markdown("""
+        <style>
+        .diagnosis-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin: 10px 0;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .diagnosis-card::before {
+            content: "⚕️ ";
+            margin-right: 8px;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        for condition in data['diagnosis']:
+            st.markdown(f'<div class="diagnosis-card">{condition}</div>', unsafe_allow_html=True)
+    
     # Entities Table
+    st.markdown("---")
     st.subheader("🧬 Extracted Vitals & Labs")
     
     # Custom Grid for beautiful display
@@ -201,7 +235,7 @@ def display_results(data):
                 </div>
                 """, unsafe_allow_html=True)
     else:
-        st.info("No specific entities detected.")
+        st.info("No specific lab test entities detected.")
             
     # Explanation
     st.markdown("---")

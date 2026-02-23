@@ -1,13 +1,19 @@
-Extract all lab test entities from the following medical text. 
-Return the output as a JSON list of objects.
-Each object must have:
-- "test_name": The specific name of the test (e.g., Hemoglobin, Glucose).
-- "value": The numerical or qualitative result.
-- "unit": The unit of measurement (extract exactly as shown).
-- "reference_range": The range provided in the text (if available).
-- "flag": Any indicator like "High", "Low", "Abnormal" (if available).
+Extract medical information from the following medical text and return as a JSON object with two keys:
+
+1. "entities": A list of lab test entities. Each object must have:
+   - "test_name": The specific name of the test (e.g., Hemoglobin, Glucose).
+   - "value": The numerical or qualitative result as a STRING (e.g., "12.20", not 12.20).
+   - "unit": The unit of measurement (extract exactly as shown).
+   - "reference_range": The range provided in the text (if available).
+   - "flag": Any indicator like "High", "Low", "Abnormal". If no indicator is explicitly in the text, but a `reference_range` is available, infer the flag (e.g., "Low" if value is below range, "High" if above, "Normal" if within).
+
+2. "diagnosis": A list of strings containing diagnosed conditions, diseases, or medical conditions mentioned in the report. Look for sections labeled "Diagnosis", "Chief Complaints", "Clinical Notes", or any mention of diseases/conditions (e.g., "Dengue", "Typhoid", "Cholera", "Herpesviral infections", etc.). Extract ICD codes if present but focus on the condition names.
 
 Text:
 {text}
 
-IMPORTANT: If the text does not contain any medical lab test results, or appears to be code/documentation/irrelevant, return exactly an empty JSON list: []. Do not return any other text or explanation.
+IMPORTANT: 
+- If no lab test results are found, return "entities" as an empty list: []
+- If no diagnosis is found, return "diagnosis" as an empty list: []
+- Always return a valid JSON object with both keys: {{"entities": [...], "diagnosis": [...]}}
+- Do not return any other text or explanation outside the JSON.

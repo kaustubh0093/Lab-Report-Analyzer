@@ -13,6 +13,7 @@ torch
 transformers
 pillow
 pypdf
+pdf2image
 python-dotenv
 httpx
 tiktoken
